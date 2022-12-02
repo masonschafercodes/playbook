@@ -1,0 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id         String   @id @default(cuid())
+  teamName   String
+  teamDetail String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  Tags            Tag[]
+  Processes       Process[]
+  User            User[]
+  ProcessTemplate ProcessTemplate[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  accounts      Account[]
+  APIKey        ApiKey?
+  defaultTeamId String?
+
+  processesAssignedTo Process[]
+  ProcessComments     ProcessComment[]
+  Teams               Team[]
+
+  @@index([email])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  secret    String   @unique
+  name      String
+  userId    String   @unique @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_key")
+}
+
+model Process {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  dueAt         DateTime @default(now()) @map("due_at")
+  processName   String
+  processDetail String?
+
+  teamId String
+
+  Team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  Tags         Tag[]
+  assignees    User[]
+  ProcessSteps ProcessStep[]
+
+  @@map("process")
+}
+
+model ProcessStep {
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  completedAt       DateTime? @map("completed_at")
+  processStepName   String
+  processStepDetail String?
+
+  processComments ProcessComment[]
+
+  processId String  @map("process_id")
+  process   Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  processTemplateId String?
+  ProcessTemplate   ProcessTemplate? @relation(fields: [processTemplateId], references: [id])
+
+  @@map("process_step")
+}
+
+model ProcessComment {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  commentBody String
+
+  ProcessStep   ProcessStep? @relation(fields: [processStepId], references: [id])
+  processStepId String?
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("process_comment")
+}
+
+model ProcessTemplate {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  processTemplateName   String
+  processTemplateDetail String?
+
+  teamId String
+
+  Team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  Tags         Tag[]
+  ProcessSteps ProcessStep[]
+
+  @@map("process_template")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  name      String   @unique @map("tag_name")
+  teamId    String   @map("team_id")
+
+  Processes        Process[]
+  ProcessTemplates ProcessTemplate[]
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@map("tag")
+}
