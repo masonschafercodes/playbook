@@ -34,6 +34,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   const processes = await prisma.process.findMany({
     where: {
       teamId: teamId as string,
+      AND: {
+        assignees: {
+          some: {
+            id: session.user.id,
+          },
+        },
+      },
     },
     include: {
       assignees: {

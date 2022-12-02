@@ -1,4 +1,4 @@
-import { Flex, Code, Text, Loader } from '@mantine/core';
+import { Flex, Text, Loader } from '@mantine/core';
 import { IconPencil } from '@tabler/icons';
 import React from 'react';
 import useSWR from 'swr';
@@ -7,9 +7,14 @@ import fetcher from '~/utils/SWRFetcher';
 import ActionMenuButton from '../Dashboard/processes-components/ActionMenuButton';
 import { PrismShell } from '../UI/shell-components/PrismShell';
 import AssignedTo from './process-components/assigned-to';
+import ProcessStepCard from './process-components/process-step';
 
 export default function Process({ user, processId }: any) {
-  const { data, error } = useSWR<SoloProcessResponse>(`/api/v1/processes/solo?processId=${processId}`, fetcher);
+  const {
+    data,
+    error,
+    mutate: mutateProcessResponse,
+  } = useSWR<SoloProcessResponse>(`/api/v1/processes/solo?processId=${processId}`, fetcher);
 
   return (
     <PrismShell user={user}>
@@ -29,6 +34,12 @@ export default function Process({ user, processId }: any) {
                 {data.process?.processDetail}
               </Text>
               <AssignedTo assignees={data.process?.assignees} />
+            </Flex>
+            <Flex direction="column" mt="lg" gap="md">
+              {data.process?.ProcessSteps &&
+                data.process?.ProcessSteps.map((step) => (
+                  <ProcessStepCard step={step} key={step.id} mutate={mutateProcessResponse} />
+                ))}
             </Flex>
           </>
         )}

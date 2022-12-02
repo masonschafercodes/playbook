@@ -1,4 +1,4 @@
-import { Process, ProcessStep, Tag } from '@prisma/client';
+import { Process, ProcessComment, ProcessStep, Tag } from '@prisma/client';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { unstable_getServerSession } from 'next-auth';
 import { prisma } from '~/utils/prisma';
@@ -7,13 +7,21 @@ import { nextAuthConfig } from '../../auth/[...nextauth]';
 export type SoloProcessResponse = {
   process:
     | (Process & {
-        ProcessSteps: ProcessStep[];
-        Tags: Tag[];
         assignees: {
-          name: string | null;
-          id: string;
           image: string | null;
+          id: string;
+          name: string | null;
         }[];
+        Tags: Tag[];
+        ProcessSteps: (ProcessStep & {
+          processComments: (ProcessComment & {
+            user: {
+              image: string | null;
+              id: string;
+              name: string | null;
+            };
+          })[];
+        })[];
       })
     | null;
 };
@@ -46,7 +54,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             image: true,
           },
         },
-        ProcessSteps: true,
+        ProcessSteps: {
+          include: {
+            processComments: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    id: true,
+                    image: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         Tags: true,
       },
     });

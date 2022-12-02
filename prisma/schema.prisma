@@ -126,6 +126,8 @@ model ProcessComment {
   updatedAt   DateTime @updatedAt @map("updated_at")
   commentBody String
 
+  isResolved Boolean @default(false) @map("is_resolved")
+
   ProcessStep   ProcessStep? @relation(fields: [processStepId], references: [id])
   processStepId String?
 
